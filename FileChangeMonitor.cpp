@@ -17,7 +17,6 @@
 #include <QDebug>
 #include <QDir>
 
-#include "Common/CommonDef.h"
 #include "FileChangeMonitor.h"
 
 #define MAX_FAIL_COUNT 10

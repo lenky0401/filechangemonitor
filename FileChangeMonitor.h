@@ -8,6 +8,12 @@
 #include <QObject>
 #include <sys/inotify.h>
 
+#include <vector>
+
+// QString and std::string converter
+#define std2QString(x)      QString(QString::fromLocal8Bit(x.c_str()))
+#define Q2stdstring(x)      std::string((const char *)x.toLocal8Bit())
+
 class FileChangeMonitor
 {
 public:
