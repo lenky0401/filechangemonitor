@@ -172,7 +172,7 @@ bool FileChangeMonitor::scanAndAddWatchDiskDirRecursive(const char *diskDirPathN
         return false;
     }
 
-    watchDir.setFilter(QDir::Dirs);
+    watchDir.setFilter(QDir::Dirs | QDir::Hidden);
     list = watchDir.entryInfoList();
     for (iter = list.begin(); iter != list.end(); ++ iter) {
         if (iter->isDir() && "." != iter->fileName() && ".." != iter->fileName()) {
