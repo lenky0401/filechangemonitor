@@ -63,6 +63,7 @@ bool FileChangeMonitor::init()
     if ((mFileMonitor = inotify_init()) == -1)
         return false;
 
+    //设置描述符为非阻塞，这个很重要，因为后面对该描述符会进行循环read
     fcntl(mFileMonitor, F_SETFL, O_NONBLOCK);
 
     return true;
@@ -359,7 +360,7 @@ bool FileChangeMonitor::dealWithEvent(inotify_event *event)
 void FileChangeMonitor::addEvent2ChangePath(inotify_event *event)
 {
     QString totalKuaiPanPath;
-    std::vector<std::string>::iterator iter;
+    std::string totalKuaiPanPathString;
 
     if (event->len == 0 || mWatchKuaiPanDirHash.contains(event->wd) == false)
         return;
@@ -369,14 +370,12 @@ void FileChangeMonitor::addEvent2ChangePath(inotify_event *event)
         totalKuaiPanPath += "/";
     }
 
-//    qDebug() << totalKuaiPanPath;
+    totalKuaiPanPathString = Q2stdstring(totalKuaiPanPath);
+    //这个查找，如果外部并不关心是否重复的话，可以去掉，以提高效率
+    if (std::find(mChangePath.begin(), mChangePath.end(), totalKuaiPanPathString) != mChangePath.end())
+        return;
 
-    for (iter = mChangePath.begin(); iter != mChangePath.end(); ++ iter) {
-        if (totalKuaiPanPath == std2QString(((std::string)*iter)))
-            return;
-    }
-
-    mChangePath.push_back(Q2stdstring(totalKuaiPanPath));
+    mChangePath.push_back(totalKuaiPanPathString);
 }
 
 
@@ -442,6 +441,11 @@ std::vector<std::string>* FileChangeMonitor::EventLoop()
             } while (length > 0);
         }
     } else if (((ret == -1 && errno == EINTR) || ret == 0) && mChangePath.size() > 0) {
+        //如果在一个timeout内有事件发生，那么不将列表导出
+        //只有在：1，发生信号，即：(ret == -1 && errno == EINTR)；
+        //2，在一个timeout内没有事件发生，即ret == 0
+        //才将列表导出，这样做的原因是，留个timeout时间的缓存，避免事件频繁导出，比如在做大量文件拷贝时，
+        //也许就只是在文件拷贝完的最后才做一次导出，提高效率。
         if (mDelayAddWatch.size() > 0)
             delayAddWatchDiskDir();
         mChangePathHaveOut = true;
