@@ -73,8 +73,21 @@ private:
     time_t mDisableWatchEventTime;
 
 public:
-    void setExcludeFolderPath(const std::vector<std::string>& excludeFolderPath) {
-        this->mExcludeFolderPath = excludeFolderPath;
+    //所有排除文件夹路径要求末尾带/，这样约定的原因是因为在进行路径排除比较时，需要用/来做界定，
+    //比如排除文件夹路径如果写成/a，那么就可能把文件/aaa给排除了，所以需要写成/a/。
+    void setExcludeFolderPath(std::vector<std::string> excludeFolderPath) {
+
+        std::string tmp;
+        std::string tail = "/";
+        std::vector<std::string>::iterator iter;
+
+        for (iter = excludeFolderPath.begin(); iter != excludeFolderPath.end(); ++ iter) {
+            tmp = ((std::string)*iter);
+            if (tmp.compare(tmp.size() - tail.size(), tail.size(), tail) != 0) {
+                tmp += tail;
+            }
+            this->mExcludeFolderPath.push_back(tmp);
+        }
     }
 
     void setExcludeFolderPrefix(const std::vector<std::string>& excludeFolderPrefix) {
@@ -125,6 +138,8 @@ private:
 
     //网盘根目录，磁盘目录路径，不带后缀/，即如果用户设置/home/lenky/test文件夹为根目录，
     //那么mRootDiskDirPathName里存的是“/home/lenky/test”，而不是“/home/lenky/test/”
+    //不管外面如何传入，函数setWatchRootDiskDir()做了处理。
+    //这样做的原因是便于后续逻辑做连接操作，即网盘根目录+网盘相对目录。
     char *mRootDiskDirPathName;
     //存放<监控描述符wd, 网盘绝对路径kuaiPanDir>数据，kuaiPanDir是相对网盘根目录而言的，
     //比如用户设置/home/lenky/test文件夹为根目录，那么/home/lenky/test文件夹的子文件夹a，
